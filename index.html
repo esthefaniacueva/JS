@@ -1,0 +1,68 @@
+﻿<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Super Mario</title>
+    <link href="Content/style.css" rel="stylesheet" />
+    <link href="menu.css" rel="stylesheet"/> 
+    <style>
+        .content-wrapper {
+            max-width: 680px; 
+            margin: 30px auto; 
+            background-color: transparent; 
+            border-radius: 12px;
+            min-height: 70vh;
+            text-align: center; 
+        }
+        
+        #game {
+            position: relative !important; 
+            margin: 0 auto !important;     
+            top: auto !important;          
+            left: auto !important;         
+            margin-left: 0 !important;     
+            margin-top: 0 !important;      
+            
+            width: 640px;   
+            height: 480px;  
+            border: 2px solid #ccc;
+            overflow: hidden; 
+
+            border-radius: 20px; /* Bordes redondeados */
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2); /* Sombra sutil */
+        }
+    </style>
+</head>
+<body>
+
+    <div id="cabecera">
+        <h1>PROYECTO FINAL</h1>
+    </div>
+
+    <div id="menu">
+        <a href="index.html" class="item_menu active">Juego</a>
+        <a href="pokeapi.html" class="item_menu">PokeAPI</a>
+        <a href="animacion.html" class="item_menu">Animación</a>
+    </div>
+
+    <div class="content-wrapper">
+        <div id="game">
+            <div id="world"></div>
+
+            <div id="coinNumber" class="gauge">0</div>
+            <div id="coin" class="gaugeSprite"></div>
+
+            <div id="liveNumber" class="gauge">0</div>
+            <div id="live" class="gaugeSprite"></div>
+        </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <script>window.jQuery || document.write('<script src="Scripts/jQuery.js"><\/script>')</script>
+    <script src="Scripts/testlevels.js"></script>
+    <script src="Scripts/oop.js"></script>
+    <script src="Scripts/keys.js"></script>
+    <script src="Scripts/constants.js"></script>
+    <script src="Scripts/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+/* --- RESET GENERAL --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* --- FONDO GENERAL PARA TODAS LAS PÁGINAS --- */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #fff5f7;  /* Cremita rosado MUY suave */
+    padding-top: 150px;         /* Para que no se esconda bajo menú */
+    color: #333;
+}
+
+/* --- CABECERA --- */
+#cabecera {
+    background-color: #ffe6ee;     /* Rosa pastel */
+    padding: 20px;
+    border-bottom: 1px solid #ffccd5;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    text-align: center;
+}
+
+#cabecera h1 {
+    color: #000050;                /* Azul profundo */
+    font-size: 32px !important;
+    font-weight: bold;
+    margin: 0;
+}
+
+/* --- MENÚ --- */
+#menu {
+    background-color: #ff8fa3;     /* Rosa más fuerte */
+    display: flex;
+    justify-content: center;
+    padding: 12px 0;
+    gap: 10px;
+    position: fixed;
+    top: 80px;                     /* Justo debajo de cabecera */
+    left: 0;
+    width: 100%;
+    z-index: 999;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.item_menu {
+    padding: 10px 20px;
+    color: #880e4f;
+    text-decoration: none;
+    font-weight: 500;
+    border-radius: 6px;
+    transition: 0.3s;
+}
+
+.item_menu:hover {
+    background-color: #ff7eb9;
+    color: white;
+}
+
+.item_menu.active {
+    background-color: #e91e63;
+    color: white;
+    font-weight: bold;
+}

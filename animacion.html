@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <title>Animación</title>
+        <link href="menu.css" rel="stylesheet"/> 
+        <style>
+            .content-wrapper {
+                max-width: 1100px;
+                margin: 15px auto;
+                background-color: transparent;
+                border-radius: 12px;
+                box-shadow: none;
+                min-height: 70vh;
+                text-align: center; 
+            }
+            
+            .canvas-container {
+                position: relative;
+                background-color: #fff;
+                border-radius: 12px;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.05); /* Sombra más suave */
+                overflow: hidden;
+                width: fit-content; /* Se ajusta al tamaño del canvas */
+                margin: 0 auto; /* Centra el contenedor dentro del wrapper */
+            }
+            
+            canvas { display: block; }
+            
+            .title {
+                position: absolute;
+                top: 25px;
+                left: 0;
+                width: 100%;
+                text-align: center;
+                font-size: 26px;
+                color: #333;
+                font-weight: 600;
+                letter-spacing: 1px;
+                pointer-events: none;
+                z-index: 10;
+            }
+            
+            .label {
+                position: absolute;
+                bottom: 30px;
+                font-size: 14px;
+                color: #666;
+                font-weight: 600;
+                text-align: center;
+                width: 100px;
+                pointer-events: none;
+                z-index: 10;
+            }
+
+            .content-wrapper h2 {
+                font-size: 2rem;
+                color: #333;
+                margin-top: 0;
+                margin-bottom: 25px;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="cabecera">
+            <h1>PROYECTO FINAL</h1>
+        </div>
+
+        <div id="menu">
+            <a href="index.html" class="item_menu">Juego</a>
+            <a href="pokeapi.html" class="item_menu">PokeAPI</a>
+            <a href="animacion.html" class="item_menu active">Animación</a>
+        </div>
+
+        <div class="content-wrapper">
+            <div class="canvas-container">
+                <h2 style="color: #e91e63; border-radius: 5%;">Crecimiento de una planta</h2>
+                <canvas id="canvas" width="960" height="400"></canvas>
+                </div>
+        </div>
+        <script>
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const COLORS = {
+            leafGreen: '#7CB342',
+            leafGreenDark: '#558B2F',
+            soilBrown: '#BC9A80',
+            soilBrownDark: '#A1887F',
+            berryRed: '#E57373',
+            berryRedDark: '#D32F2F', // Sombra para el fruto
+            wateringCanBlue: '#64B5F6',
+            waterDropBlue: '#90CAF9',
+            seedBrown: '#8D6E63',
+            stemColor: '#689F38'
+        };
+
+        const stagesCount = 6;
+        const stageWidth = canvas.width / stagesCount;
+        const groundY = 320;
+        
+        let stageProgress = Array(stagesCount).fill(0);
+        const stageStartDelay = [0, 80, 160, 240, 320, 400];
+        let currentFrame = 0;
+        let animatedSeeds = [];
+        let animatedWaterDrops = [];
+
+        // --- FUNCIONES DE DIBUJO GENERALES ---
+
+        function drawSoilMound(centerX) {
+            ctx.fillStyle = COLORS.soilBrown;
+            ctx.beginPath();
+            ctx.arc(centerX - 25, groundY + 5, 12, Math.PI, 0, false);
+            ctx.arc(centerX, groundY, 18, Math.PI, 0, false);
+            ctx.arc(centerX + 25, groundY + 5, 12, Math.PI, 0, false);
+            ctx.fill();
+            ctx.fillStyle = COLORS.soilBrownDark;
+            ctx.beginPath();
+            ctx.ellipse(centerX, groundY + 10, 30, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawLeafFlat(ctx, x, y, w, h, angle, color) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, w / 2, h / 2, 0, 0, Math.PI * 2);
+            ctx.fill();
+            // Pequeña nervadura
+            ctx.strokeStyle = "rgba(0,0,0,0.1)";
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(-w/2 + 5, 0); ctx.lineTo(w/2 - 5, 0); ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawBerry(x, y, scale) {
+            if (scale <= 0) return;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(scale, scale);
+            
+            // Fruto
+            ctx.fillStyle = COLORS.berryRed;
+            ctx.beginPath();
+            ctx.arc(0, 0, 7, 0, Math.PI*2);
+            ctx.fill();
+            
+            // Brillo
+            ctx.fillStyle = "rgba(255,255,255,0.3)";
+            ctx.beginPath();
+            ctx.arc(-2, -2, 3, 0, Math.PI*2);
+            ctx.fill();
+            
+            // Sombra inferior
+            ctx.fillStyle = "rgba(0,0,0,0.1)";
+            ctx.beginPath();
+            ctx.arc(0, 0, 7, 0, Math.PI, false);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // --- PLANTA GENÉRICA (Etapas 3, 4, 5) ---
+        function drawGenericPlant(centerX, currentHeight, leafCount, progress) {
+            if (currentHeight <= 0) return;
+            const basePlantY = groundY;
+            const topPlantY = basePlantY - currentHeight;
+            const stemWidth = 5 + (currentHeight / 30);
+
+            // Tallo
+            ctx.fillStyle = COLORS.stemColor;
+            ctx.beginPath();
+            ctx.moveTo(centerX - stemWidth/2, basePlantY);
+            ctx.quadraticCurveTo(centerX, basePlantY - currentHeight/2, centerX, topPlantY);
+            ctx.lineTo(centerX + stemWidth/2, topPlantY);
+            ctx.quadraticCurveTo(centerX, basePlantY - currentHeight/2, centerX + stemWidth/2, basePlantY);
+            ctx.fill();
+
+            // Hojas
+            for (let i = 0; i < leafCount; i++) {
+                const ratio = (i + 1) / (leafCount + 1);
+                const y = basePlantY - (currentHeight * ratio);
+                const size = 25 * progress;
+                drawLeafFlat(ctx, centerX - stemWidth/2, y, size, size*0.6, 2.5, COLORS.leafGreen);
+                drawLeafFlat(ctx, centerX + stemWidth/2, y, size, size*0.6, 0.6, COLORS.leafGreen);
+            }
+            // Hoja tope
+            if (progress > 0.8) {
+                drawLeafFlat(ctx, centerX, topPlantY, 20*progress, 12*progress, -1.5, COLORS.leafGreen);
+            }
+        }
+
+        // --- PLANTA DE COSECHA FRONDOSA (Etapa 6) ---
+        function drawMatureHarvestPlant(centerX, progress) {
+            const h = 180 * progress; // Altura máxima
+            if (h < 10) return;
+
+            const startY = groundY;
+            const endY = groundY - h;
+            
+            // 1. ESTRUCTURA DE RAMAS (Tallo principal + 2 ramas)
+            ctx.strokeStyle = COLORS.stemColor;
+            ctx.lineWidth = 8 * progress;
+            ctx.lineCap = "round";
+            
+            // Rama Principal (Centro)
+            ctx.beginPath();
+            ctx.moveTo(centerX, startY);
+            ctx.quadraticCurveTo(centerX + 5, startY - h/2, centerX, endY);
+            ctx.stroke();
+
+            // Rama Izquierda
+            if (progress > 0.3) {
+                ctx.beginPath();
+                ctx.moveTo(centerX, startY - h * 0.3);
+                ctx.quadraticCurveTo(centerX - 40, startY - h * 0.6, centerX - 50, startY - h * 0.8);
+                ctx.stroke();
+            }
+
+            // Rama Derecha
+            if (progress > 0.3) {
+                ctx.beginPath();
+                ctx.moveTo(centerX, startY - h * 0.4);
+                ctx.quadraticCurveTo(centerX + 40, startY - h * 0.6, centerX + 50, startY - h * 0.7);
+                ctx.stroke();
+            }
+
+            // 2. HOJAS (Más abundantes)
+            const leafSize = 24 * progress;
+            const leafW = leafSize;
+            const leafH = leafSize * 0.6;
+
+            // Hojas en tallo central
+            drawLeafFlat(ctx, centerX, endY, leafW, leafH, -1.5, COLORS.leafGreen); // Tope
+            drawLeafFlat(ctx, centerX - 5, startY - h*0.5, leafW, leafH, 2.8, COLORS.leafGreen);
+            drawLeafFlat(ctx, centerX + 5, startY - h*0.6, leafW, leafH, 0.4, COLORS.leafGreen);
+
+            // Hojas en rama izquierda
+            if (progress > 0.4) {
+                const lx = centerX - 25; const ly = startY - h * 0.5;
+                drawLeafFlat(ctx, lx, ly, leafW, leafH, 3, COLORS.leafGreen);
+                drawLeafFlat(ctx, centerX - 50, startY - h * 0.8, leafW, leafH, -2, COLORS.leafGreen); // Punta rama izq
+            }
+
+            // Hojas en rama derecha
+            if (progress > 0.4) {
+                const rx = centerX + 25; const ry = startY - h * 0.55;
+                drawLeafFlat(ctx, rx, ry, leafW, leafH, 0.2, COLORS.leafGreen);
+                drawLeafFlat(ctx, centerX + 50, startY - h * 0.7, leafW, leafH, -1, COLORS.leafGreen); // Punta rama der
+            }
+
+            // 3. MUCHOS FRUTOS (Cosecha abundante)
+            // Solo aparecen cuando la planta ya creció un poco (progress > 0.6)
+            if (progress > 0.6) {
+                const berryScale = Math.min(1, (progress - 0.6) * 2.5); // Efecto pop-up
+                
+                // Lista de posiciones de bayas (dispersas por las ramas)
+                const berries = [
+                    {x: centerX + 10, y: endY + 20},  // Cerca tope
+                    {x: centerX - 15, y: endY + 40},  
+                    {x: centerX - 50, y: startY - h * 0.8 + 10}, // Rama izq punta
+                    {x: centerX - 30, y: startY - h * 0.5}, // Rama izq medio
+                    {x: centerX + 50, y: startY - h * 0.7 + 10}, // Rama der punta
+                    {x: centerX + 30, y: startY - h * 0.6}, // Rama der medio
+                    {x: centerX + 15, y: startY - h * 0.3}, // Base derecha
+                    {x: centerX - 10, y: startY - h * 0.25} // Base izquierda
+                ];
+
+                berries.forEach(b => drawBerry(b.x, b.y, berryScale));
+            }
+        }
+
+
+        // --- ETAPAS ---
+
+        function drawStage1(cx, p) {
+            drawSoilMound(cx);
+            const alpha = Math.max(0, 1 - p * 2);
+            if (alpha > 0.01) {
+                ctx.save(); ctx.translate(cx - 40, groundY - 80); ctx.rotate(p); ctx.globalAlpha = alpha;
+                ctx.fillStyle = COLORS.seedBrown; // Color de la bolsa de semillas
+                ctx.fillRect(-15, -20, 30, 40);
+                drawLeafFlat(ctx, 0, 0, 15, 10, 0, COLORS.leafGreen);
+                ctx.restore();
+            }
+            // Semillas
+            if (p > 0.2 && p < 0.8 && currentFrame % 10 === 0) 
+                animatedSeeds.push({x: cx - 20 + Math.random()*20, y: groundY - 80, vy: 3});
+            
+            animatedSeeds = animatedSeeds.filter(s => s.y < groundY + 10);
+            animatedSeeds.forEach(s => {
+                s.y += s.vy; 
+                ctx.fillStyle = COLORS.seedBrown; ctx.beginPath(); ctx.arc(s.x, s.y, 2, 0, Math.PI*2); ctx.fill();
+            });
+        }
+
+        function drawStage2(cx, p) {
+            drawSoilMound(cx);
+            const alpha = Math.max(0, 1 - (p*2 - 1));
+            if (alpha > 0.01) {
+                // Regadera
+                ctx.save(); ctx.translate(cx + 50, groundY - 100); ctx.rotate(p*0.5); ctx.globalAlpha = alpha;
+                ctx.fillStyle = COLORS.wateringCanBlue;
+                ctx.fillRect(-25, -20, 50, 40); ctx.beginPath(); ctx.moveTo(25, 0); ctx.lineTo(50, -10); ctx.lineTo(25, -20); ctx.fill();
+                ctx.restore();
+                
+                // Gotas de agua
+                if (p > 0.2 && p < 0.7 && currentFrame % 8 === 0)
+                    animatedWaterDrops.push({x: cx + 10 + Math.random()*10, y: groundY - 80, vy: 4});
+            }
+
+            animatedWaterDrops = animatedWaterDrops.filter(d => d.y < groundY + 10);
+            animatedWaterDrops.forEach(d => {
+                d.y += d.vy; 
+                if(d.y < groundY) { ctx.fillStyle = COLORS.waterDropBlue; ctx.beginPath(); ctx.arc(d.x, d.y, 3, 0, Math.PI*2); ctx.fill(); }
+            });
+
+            // Brote pequeño
+            const h = Math.max(0, (p - 0.5) * 80);
+            drawGenericPlant(cx, h, 1, Math.min(1, p * 1.5));
+        }
+
+        function drawStage3(cx, p) { drawSoilMound(cx); drawGenericPlant(cx, p * 90, 2, p); }
+        function drawStage4(cx, p) { drawSoilMound(cx); drawGenericPlant(cx, p * 130, 3, p); }
+        function drawStage5(cx, p) { drawSoilMound(cx); drawGenericPlant(cx, p * 160, 4, p); }
+        
+        // ETAPA 6 MEJORADA
+        function drawStage6(cx, p) {
+            drawSoilMound(cx);
+            // Usamos la nueva función de planta abundante
+            drawMatureHarvestPlant(cx, p);
+        }
+
+        // --- ANIMACIÓN ---
+        const stageLabels = ["Semillas", "Riego", "Brote", "Crecimiento", "Desarrollo", "Cosecha"];
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            currentFrame++;
+
+            for (let i = 0; i < stagesCount; i++) {
+                if (currentFrame >= stageStartDelay[i] && stageProgress[i] < 1) {
+                    // Aceleración suave: La etapa avanza más lento a medida que se acerca a 1
+                    const speed = 0.008 * (1 - stageProgress[i] * 0.5);
+                    stageProgress[i] += speed;
+                    stageProgress[i] = Math.min(1, stageProgress[i]);
+                }
+                
+                const cx = (stageWidth * i) + (stageWidth / 2);
+                
+                // Etiquetas
+                let labelDiv = document.getElementById(`label-${i}`);
+                if (!labelDiv) {
+                    labelDiv = document.createElement('div');
+                    labelDiv.id = `label-${i}`; labelDiv.className = 'label';
+                    document.querySelector('.canvas-container').appendChild(labelDiv);
+                }
+                labelDiv.textContent = stageLabels[i];
+                labelDiv.style.left = `${cx - 50}px`;
+
+                // Dibujar etapa correspondiente
+                if (i === 0) drawStage1(cx, stageProgress[i]);
+                else if (i === 1) drawStage2(cx, stageProgress[i]);
+                else if (i === 2) drawStage3(cx, stageProgress[i]);
+                else if (i === 3) drawStage4(cx, stageProgress[i]);
+                else if (i === 4) drawStage5(cx, stageProgress[i]);
+                else if (i === 5) drawStage6(cx, stageProgress[i]);
+            }
+
+            // Reiniciar la animación una vez que la última etapa ha terminado
+            if (stageProgress[stagesCount - 1] >= 1 && currentFrame > stageStartDelay[stagesCount - 1] + 300) {
+                stageProgress.fill(0); currentFrame = 0; animatedSeeds = []; animatedWaterDrops = [];
+            }
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+    </script>
+    </body>
+</html>
